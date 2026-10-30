@@ -1,0 +1,30 @@
+# Secrets et environnement local
+.env
+*.env
+!.env.example
+!infra/versions.env
+secrets/
+*.pem
+*.key
+
+# Maven / Java
+target/
+*.class
+*.log
+hs_err_pid*
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+*.swp
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Données locales des conteneurs
+infra/data/
