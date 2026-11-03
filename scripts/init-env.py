@@ -8,7 +8,7 @@ if p.exists():
     for line in p.read_text().splitlines():
         if '=' in line and not line.startswith('#'):
             k,v=line.split('=',1); values[k]=v
-for k in ['MONGO_ROOT_PASSWORD','MONGO_APP_PASSWORD','REDIS_PASSWORD','CURSOR_SECRET']:
+for k in ['MONGO_ROOT_PASSWORD','MONGO_APP_PASSWORD','REDIS_PASSWORD','CURSOR_SECRET','CASSANDRA_APP_PASSWORD','CASSANDRA_ADMIN_PASSWORD']:
     if not values.get(k): values[k]=secrets.token_hex(24)
 values.setdefault('MONGO_ROOT_USERNAME','admin')
 values.setdefault('MONGO_APP_USERNAME','temperature_app')
