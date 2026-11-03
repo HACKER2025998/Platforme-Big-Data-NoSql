@@ -17,6 +17,6 @@ public class ClockConfig {
 
   @Bean
   public Clock clock() {
-    return Clock.systemUTC();
+    return Clock.tickMillis(java.time.ZoneOffset.UTC);
   }
 }
