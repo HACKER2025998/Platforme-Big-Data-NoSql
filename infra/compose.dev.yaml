@@ -4,6 +4,8 @@ services:
     image: mongo:8.0.32@sha256:d0d926f94df099bff534b7ee5b5986458131a22489dfff8664509af0c1e2ca9c
     restart: unless-stopped
     environment:
+      # Réserver rseq à glibc évite le chemin TCMalloc per-CPU incompatible avec certains noyaux récents.
+      GLIBC_TUNABLES: glibc.pthread.rseq=1
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Secret Mongo requis}
       MONGO_APP_USERNAME: ${MONGO_APP_USERNAME:-temperature_app}

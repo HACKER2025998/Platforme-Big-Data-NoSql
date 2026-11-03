@@ -17,3 +17,9 @@ Images téléchargées et utilisées le 3 novembre 2026 ; digests issus des rés
 Java : 21. Spring Boot : 4.0.9 et dépendances gérées par son BOM. Maven Wrapper : 3.9.11. React : 19.2.0. Vite : 7.2.2. Newman : 6.2.1. Ansible collection community.docker : 4.8.1. Dépendances JavaScript exactes dans `frontend/package-lock.json`.
 
 Les digests applicatifs de publication sont produits par GHCR après validation ; les images applicatives locales ne constituent pas une publication GHCR.
+
+## Compatibilité du noyau MongoDB
+
+Le runner GitHub a rencontré l’erreur fatale MongoDB 12257600 sur son noyau récent. Le [ticket MongoDB officiel SERVER-136848](https://jira.mongodb.org/browse/SERVER-136848) décrit le contrôle de version des noyaux Ubuntu ; les [notes MongoDB](https://www.mongodb.com/docs/v8.0/release-notes/8.0/) décrivent l’incompatibilité TCMalloc/rseq.
+
+Les Compose définissent `GLIBC_TUNABLES=glibc.pthread.rseq=1` pour MongoDB. Ce réglage laisse glibc enregistrer rseq et empêche TCMalloc d’activer ses caches par CPU ; l’allocateur utilise ses caches par thread. Cette déduction suit le fonctionnement décrit par la [documentation officielle TCMalloc de MongoDB](https://www.mongodb.com/docs/manual/administration/tcmalloc-performance/) et le [suivi de l’image officielle](https://github.com/docker-library/mongo/issues/765). Le réglage doit être réévalué lors d’une mise à jour de MongoDB ou du noyau ; aucune performance de production n’est revendiquée.
