@@ -1,0 +1,116 @@
+---
+- name: Préparer Docker sur les deux VM Ubuntu
+  hosts: all
+  become: true
+  tasks:
+    - name: Installer certificats et curl
+      ansible.builtin.apt:
+        name: [ca-certificates, curl]
+        state: present
+        update_cache: true
+    - name: Créer le dossier des clés apt
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+    - name: Télécharger la clé officielle Docker
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+    - name: Ajouter le dépôt Docker Ubuntu
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        filename: docker
+    - name: Installer Docker et Compose
+      ansible.builtin.apt:
+        name: [docker-ce, docker-ce-cli, containerd.io, docker-buildx-plugin, docker-compose-plugin]
+        state: present
+        update_cache: true
+    - name: Activer Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+    - name: Créer le répertoire applicatif
+      ansible.builtin.file:
+        path: /opt/plateforme
+        state: directory
+        mode: '0750'
+    - name: Copier les secrets du contrôleur
+      ansible.builtin.copy:
+        src: ../.env
+        dest: /opt/plateforme/.env
+        mode: '0600'
+      no_log: true
+
+- name: Déployer les services de données
+  hosts: data
+  become: true
+  tasks:
+    - name: Copier les schémas et scripts init
+      ansible.builtin.copy:
+        src: "../infra/{{ item }}"
+        dest: /opt/plateforme/
+        mode: preserve
+      loop: [mongo, cassandra]
+    - name: Copier le Compose data
+      ansible.builtin.copy:
+        src: ../infra/compose.data.yaml
+        dest: /opt/plateforme/compose.yaml
+        mode: '0644'
+    - name: Définir l'adresse privée de publication
+      ansible.builtin.lineinfile:
+        path: /opt/plateforme/.env
+        regexp: '^DATA_BIND_IP='
+        line: 'DATA_BIND_IP={{ ansible_host }}'
+      no_log: true
+    - name: Lancer et attendre les services data
+      community.docker.docker_compose_v2:
+        project_src: /opt/plateforme
+        wait: true
+        wait_timeout: 600
+
+- name: Déployer Java et React
+  hosts: app
+  become: true
+  tasks:
+    - name: Exiger des images immuables
+      ansible.builtin.assert:
+        that:
+          - backend_image is defined
+          - web_image is defined
+          - "'@sha256:' in backend_image or (backend_image | regex_search(':[0-9a-f]{40}$'))"
+          - "'@sha256:' in web_image or (web_image | regex_search(':[0-9a-f]{40}$'))"
+    - name: Copier le Compose applicatif
+      ansible.builtin.copy:
+        src: ../infra/compose.app.yaml
+        dest: /opt/plateforme/compose.yaml
+        mode: '0644'
+    - name: Définir les adresses et images
+      ansible.builtin.lineinfile:
+        path: /opt/plateforme/.env
+        regexp: '^{{ item.key }}='
+        line: '{{ item.key }}={{ item.value }}'
+      loop:
+        - {key: DATA_HOST, value: "{{ hostvars[groups['data'][0]].ansible_host }}"}
+        - {key: APP_BIND_IP, value: '{{ ansible_host }}'}
+        - {key: BACKEND_IMAGE, value: '{{ backend_image }}'}
+        - {key: WEB_IMAGE, value: '{{ web_image }}'}
+      no_log: true
+    - name: Démarrer l'application
+      community.docker.docker_compose_v2:
+        project_src: /opt/plateforme
+        pull: always
+    - name: Attendre la readiness privée de Java
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8080/actuator/health/readiness
+        status_code: 200
+      register: readiness
+      until: readiness.status == 200
+      retries: 60
+      delay: 5
+    - name: Vérifier l'entrée utilisateur
+      ansible.builtin.uri:
+        url: 'http://{{ ansible_host }}/'
+        status_code: 200

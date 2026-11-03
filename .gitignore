@@ -16,3 +16,5 @@ node_modules/
 frontend/dist/
 .playwright/
 *.log
+
+ansible/inventory.ini
