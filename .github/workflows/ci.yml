@@ -53,7 +53,9 @@ jobs:
         run: ./scripts/run-postman.sh
       - name: Journaux sans configuration privée
         if: failure()
-        run: ./scripts/compose.sh logs --no-color > /tmp/temperature-reports/compose.log
+        run: |
+          mkdir -p /tmp/temperature-reports
+          ./scripts/compose.sh logs --no-color > /tmp/temperature-reports/compose.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:

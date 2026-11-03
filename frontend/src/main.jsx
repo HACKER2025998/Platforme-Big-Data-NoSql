@@ -67,6 +67,36 @@ function App() {
     [sensorTotal, setSensorTotal] = useState(0),
     [cursor, setCursor] = useState(null),
     [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    if (!modal) return;
+    const previous = document.activeElement;
+    const handler = (event) => {
+      if (event.key === "Escape") {
+        setModal(null);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const fields = [
+        ...document.querySelectorAll(
+          ".modal button, .modal input, .modal select",
+        ),
+      ].filter((x) => !x.disabled);
+      const first = fields[0],
+        last = fields[fields.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => {
+      document.removeEventListener("keydown", handler);
+      previous?.focus();
+    };
+  }, [modal]);
   const active = useRef(true),
     refreshing = useRef(false);
   const current = sensors.find((x) => x.id === selected);
@@ -916,6 +946,11 @@ function App() {
                 <X size={20} />
               </button>
             </div>
+            {error && (
+              <div className="error" role="alert">
+                {error}
+              </div>
+            )}
             <form onSubmit={save}>
               {modal.type === "measure" ? (
                 <>

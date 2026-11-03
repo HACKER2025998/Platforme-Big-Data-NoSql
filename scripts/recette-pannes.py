@@ -28,6 +28,7 @@ call('POST',base+'/capteurs',{'id':sensor,'libelle':'Pannes','salle':'Recette pa
 def measure(temp):return {'eventId':str(uuid.uuid4()),'capteurId':sensor,'date':datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='milliseconds'),'temperature':temp}
 def processed(e):return call('GET',base+'/ingestions/'+e['eventId'])['processingState']=='PROCESSED'
 stopped=[]
+finished=False
 try:
  e=measure(23);call('POST',base+'/mesures',e,202);wait(lambda:processed(e))
  compose('stop','redis');stopped.append('redis')
@@ -56,6 +57,7 @@ try:
  dlq=compose('exec','-T','kafka','/opt/kafka/bin/kafka-console-consumer.sh','--bootstrap-server','kafka:29092','--topic','mesures-temperature-dlq','--from-beginning','--timeout-ms','20000','--max-messages','1')
  test('JSON illisible conservé dans DLQ','invalid-json-recette' in dlq)
  e4=measure(25);call('POST',base+'/mesures',e4,202);wait(lambda:processed(e4));test('Consommation continue après DLQ')
+ finished=True
 finally:
  for service in stopped:compose('start',service)
- Path(a.report).write_text(json.dumps({'date':datetime.datetime.now(datetime.timezone.utc).isoformat(),'checks':results,'passed':len(results)},indent=2,ensure_ascii=False)+'\n')
+ Path(a.report).write_text(json.dumps({'date':datetime.datetime.now(datetime.timezone.utc).isoformat(),'checks':results,'passed':len(results),'failed':0 if finished else 1},indent=2,ensure_ascii=False)+'\n')

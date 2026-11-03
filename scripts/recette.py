@@ -63,6 +63,9 @@ try:
     call('POST',base+'/mesures',{**event(23),'capteurId':'INCONNU-RECETTE'},404);check('Capteur inconnu refusé',True)
     call('GET',base+'/capteurs?taille=101',expected=400);call('GET',base+'/alertes?statut=INVALID',expected=400);check('Pagination et filtres invalides refusés',True)
     invalid=urllib.parse.urlencode({'du':stamp(now),'au':stamp(now+datetime.timedelta(days=8))});call('GET',base+'/capteurs/'+sensor+'/mesures?'+invalid,expected=400);check('Période de plus de sept jours refusée',True)
+except Exception as error:
+    checks.append({'name':'Erreur de recette : '+str(error),'passed':False})
+    raise
 finally:
     report={'date':datetime.datetime.now(datetime.timezone.utc).isoformat(),'url':a.url,'checks':checks,'passed':sum(x['passed'] for x in checks),'failed':sum(not x['passed'] for x in checks)}
     Path(a.report).parent.mkdir(parents=True,exist_ok=True);Path(a.report).write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n')
