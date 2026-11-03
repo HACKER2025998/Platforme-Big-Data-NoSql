@@ -2,6 +2,8 @@
 
 Une plateforme de surveillance des températures de salles : collecte continue, historique consultable, dernières valeurs et alertes de dépassement. Le projet associe **Java Spring Boot, React, Kafka, MongoDB, Cassandra et Redis**, avec Docker Compose pour l’exécution et Ansible pour préparer le déploiement sur deux VM Ubuntu.
 
+Pour apprendre à reconstruire et comprendre chaque couche : [guide complet de A à Z](docs/guide-complet-construction-et-fonctionnement.md).
+
 ![Tableau de bord de supervision](docs/images/tableau-de-bord.png)
 
 ## Le projet
