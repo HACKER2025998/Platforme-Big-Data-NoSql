@@ -12,6 +12,9 @@ Recette exécutée le **3 novembre 2026**, sur Linux, JDK 21 et Docker Engine 29
 | Newman / collection Postman | 20 assertions, zéro échec |
 | Navigateur Chromium | Création, modification, mesure, suivi PROCESSED, acquittement, CSV et mobile réussis ; aucune exception JavaScript |
 | Authentification Cassandra | Connexion applicative réussie, mauvais mot de passe refusé |
+| Ansible | Syntaxe du playbook validée avec community.docker 4.8.1, sans connexion aux VM |
+| Clone / volumes neufs | Pile séparée démarrée, recette HTTP réelle exécutée |
+| Images Java et React/Nginx | Construction multiétape réussie ; Java sous UID 10001, interface HTTP 200 et probes masquées par Nginx (404) |
 | Migration MongoDB | Deux exécutions successives réussies, sans suppression |
 
 ## Cas vérifiés

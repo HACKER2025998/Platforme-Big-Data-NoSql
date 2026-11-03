@@ -138,6 +138,9 @@ cd ../frontend
 npm ci
 npm run build
 npm run dev               # http://localhost:5173 ; proxy API localhost:8080
+# Recette navigateur sur la pile Docker démarrée :
+npx playwright install chromium
+npm run test:ui
 cd ..
 
 python3 scripts/recette.py

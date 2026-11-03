@@ -51,6 +51,16 @@ jobs:
         run: python3 scripts/recette-pannes.py --test-stack temperature --report /tmp/temperature-reports/pannes.json
       - name: Recette Postman
         run: ./scripts/run-postman.sh
+      - name: Préparer le navigateur
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Recette de l'interface
+        working-directory: frontend
+        env:
+          UI_REPORT_DIR: /tmp/temperature-reports/ui
+        run: npm run test:ui
       - name: Journaux sans configuration privée
         if: failure()
         run: |
