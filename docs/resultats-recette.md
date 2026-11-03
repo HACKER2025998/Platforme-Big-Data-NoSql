@@ -4,14 +4,16 @@ Recette exécutée le **3 novembre 2026**, sur Linux, JDK 21 et Docker Engine 29
 
 | Vérification | Résultat constaté |
 | --- | --- |
-| Java `mvn verify` | 25 tests, zéro échec, zéro test ignoré |
+| Java `mvn verify` | 26 tests, zéro échec, zéro test ignoré |
 | React `npm run build` | Construction Vite réussie |
 | Contrat OpenAPI | Validation Swagger Parser réussie |
 | Recette HTTP `scripts/recette.py` | 29 contrôles réussis avec les vrais services |
-| Recette panne `scripts/recette-pannes.py` | 13 contrôles réussis avec les vrais services |
+| Recette panne `scripts/recette-pannes.py` | 14 contrôles réussis avec les vrais services |
 | Newman / collection Postman | 20 assertions, zéro échec |
 | Navigateur Chromium | Création, modification, mesure, suivi PROCESSED, acquittement, CSV et mobile réussis ; aucune exception JavaScript |
 | Authentification Cassandra | Connexion applicative réussie, mauvais mot de passe refusé |
+| Budget statistique | 10 001 lignes réelles : HTTP 422 ; historique borné à 500 et curseur fourni |
+| Sauvegarde/restauration locale | Quatre fiches, quatre dernières valeurs et 200 lignes historiques retrouvées sur une pile séparée |
 | Ansible | Syntaxe du playbook validée avec community.docker 4.8.1, sans connexion aux VM |
 | Clone / volumes neufs | Pile séparée démarrée, recette HTTP réelle exécutée |
 | Images Java et React/Nginx | Construction multiétape réussie ; Java sous UID 10001, interface HTTP 200 et probes masquées par Nginx (404) |

@@ -127,6 +127,29 @@ class Pipeline {
         .info("eventId={} phase=processing result=PROCESSED", id);
   }
 
+  // Docker retire l'entrée DNS du courtier arrêté. Différer le démarrage permet
+  // à l'API et à l'outbox de rester disponibles même au redémarrage de Java.
+  @org.springframework.beans.factory.annotation.Autowired
+  org.springframework.kafka.config.KafkaListenerEndpointRegistry listeners;
+
+  @org.springframework.beans.factory.annotation.Autowired PlatformHealth readiness;
+
+  @Scheduled(fixedDelay = 5000, initialDelay = 1000)
+  void startConsumersWhenAvailable() {
+    for (var container : listeners.getListenerContainers()) {
+      if (!container.isRunning()) {
+        if (!readiness.health().getStatus().getCode().equals("UP")) return;
+        try {
+          container.start();
+        } catch (Exception unavailable) {
+          // Le conteneur parent peut avoir commencé son démarrage avant l'échec du client.
+          container.stop();
+          org.slf4j.LoggerFactory.getLogger(Pipeline.class).warn("consumer_start_pending");
+        }
+      }
+    }
+  }
+
   @Bean
   DefaultErrorHandler kafkaErrorHandler() {
     var handler =

@@ -54,6 +54,7 @@ python3 scripts/generate-measures.py --seed --count 10
 # Ctrl+C pour arrêter le générateur ; les données restent conservées.
 
 ./scripts/dev-down.sh       # arrête les conteneurs, conserve les volumes
+# Sauvegarde et restauration locale isolée : voir docs/exploitation.md
 ```
 
 Aucun mot de passe commun n’est livré. Les identifiants techniques et secrets générés restent dans `.env` sur votre poste ; ce fichier n’est jamais publié. Voir [la configuration et l’exploitation](docs/exploitation.md).

@@ -16,6 +16,6 @@ cqlsh cassandra -u cassandra -p "$admin" -f /schema.cql
 {
   printf "CREATE ROLE IF NOT EXISTS temperature_app WITH PASSWORD = '%s' AND LOGIN = true;\n" "$CASSANDRA_APP_PASSWORD"
   printf 'GRANT SELECT ON KEYSPACE temperature TO temperature_app;\nGRANT MODIFY ON KEYSPACE temperature TO temperature_app;\n'
-  printf "ALTER ROLE cassandra WITH PASSWORD = '%s';\n" "$CASSANDRA_ADMIN_PASSWORD"
+  if [[ "$admin" == cassandra ]]; then printf "ALTER ROLE cassandra WITH PASSWORD = '%s';\n" "$CASSANDRA_ADMIN_PASSWORD"; fi
 } | cqlsh cassandra -u cassandra -p "$admin"
 echo 'Schéma et comptes Cassandra prêts.'

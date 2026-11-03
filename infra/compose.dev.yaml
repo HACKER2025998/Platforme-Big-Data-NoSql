@@ -104,6 +104,7 @@ services:
           /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --create --if-not-exists --topic $$topic --partitions 3 --replication-factor 1
         done
   backend:
+    stop_grace_period: 45s
     build: ../backend
     restart: unless-stopped
     environment:

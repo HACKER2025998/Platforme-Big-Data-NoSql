@@ -35,7 +35,7 @@ flowchart LR
 
 1. L’API valide UUID, identifiant capteur, état actif, température finie entre −50 et 100 °C et date entre 2000 et maintenant + 5 minutes. Dates normalisées à la milliseconde.
 2. Le seuil du capteur est figé dans l’événement. Un seul document MongoDB contient événement, empreinte et états indépendants de publication et de traitement. L’écriture utilise `w=majority&journal=true`. HTTP **202 signifie reçu durablement**, sans garantie de projection déjà visible.
-3. Le relais publie les reçus en attente dans Kafka avec le capteur comme clé. Il attend la confirmation avant de marquer `PUBLISHED`. Une panne Kafka conserve le reçu et déclenche des reprises avec délai borné à 60 secondes.
+3. Le relais publie les reçus en attente dans Kafka avec le capteur comme clé. Il attend la confirmation avant de marquer `PUBLISHED`. Une panne Kafka conserve le reçu et déclenche des reprises avec délai borné à 60 secondes. Le démarrage du consommateur est différé et retenté pour permettre à Java de démarrer même si le nom DNS du courtier arrêté est temporairement absent.
 4. Le consommateur compare le message au snapshot du reçu, écrit l’historique Cassandra, met à jour conditionnellement la dernière mesure et crée une alerte si la température dépasse strictement le seuil figé. Redis est facultatif. Le reçu devient `PROCESSED` après les écritures durables ; l’offset est ensuite confirmé.
 5. Trois nouvelles tentatives, espacées de deux secondes, précèdent la récupération DLQ. L’envoi en DLQ doit être confirmé. Une ingestion connue devient `FAILED`, sauf si déjà traitée. Le script de reprise ne réinitialise que les reçus en échec.
 6. React interroge l’API toutes les deux secondes ; les bases restent inaccessibles au navigateur.

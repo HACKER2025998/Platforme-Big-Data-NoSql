@@ -12,7 +12,7 @@ Les responsabilités sont implémentées dans des classes regroupées par foncti
 | T031 | à T040 puis T051 à T060. Admission durable, Kafka, traitement et reprises. | Implémenté dans la plateforme ; voir contrat, sources et résultats de recette |
 | T061 | à T070. Historique, dernière valeur, alertes et statistiques. | Implémenté dans la plateforme ; voir contrat, sources et résultats de recette |
 | T071 | à T080. Probes, image Java, Compose, générateur et exploitation. | Implémenté dans la plateforme ; voir contrat, sources et résultats de recette |
-| T082 | à T090. Suites réelles, Postman automatisé et CI. | Tests Java exécutés |
+| T082 | à T090. Suites réelles, Postman automatisé et CI. | 26 tests Java exécutés, formatage cohérent ; rapport JaCoCo et règles de style automatisées à compléter |
 | T091 | à T100. Clone neuf, revue croisée, recette finale et tag backend. | Démarrage documenté ; second poste humain non testé |
 | T001 | Créer le dépôt et les règles de contribution | Branches et PR sur develop ; revue humaine non réalisée |
 | T002 | Initialiser le projet Spring Boot et Maven Wrapper | Implémenté dans la plateforme ; voir contrat, sources et résultats de recette |
@@ -90,18 +90,18 @@ Les responsabilités sont implémentées dans des classes regroupées par foncti
 | T074 | Créer l’image Docker du backend | Implémenté dans la plateforme ; voir contrat, sources et résultats de recette |
 | T075 | Exécuter le backend dans Compose | Implémenté dans la plateforme ; voir contrat, sources et résultats de recette |
 | T076 | Créer le générateur de mesures par l’API | Implémenté dans la plateforme ; voir contrat, sources et résultats de recette |
-| T077 | Vérifier la persistance et le redémarrage | Implémenté dans la plateforme ; voir contrat, sources et résultats de recette |
-| T078 | Documenter rétentions et récupération des erreurs | Procédures fournies ; restauration sur autre VM non exécutée |
-| T079 | Préparer la configuration de sauvegarde de développement | Implémenté dans la plateforme ; voir contrat, sources et résultats de recette |
-| T080 | Vérifier l’arrêt gracieux et les délais | Implémenté dans la plateforme ; voir contrat, sources et résultats de recette |
+| T077 | Vérifier la persistance et le redémarrage | Redémarrage Mongo et Java/outbox vérifiés ; volumes conservés |
+| T078 | Documenter rétentions et récupération des erreurs | Rétention Kafka 24 h, registre/historique sans purge automatique, diagnostic documenté |
+| T079 | Préparer la configuration de sauvegarde de développement | Scripts backup-dev/restore-dev ; restauration locale du jeu connu vérifiée |
+| T080 | Vérifier l’arrêt gracieux et les délais | Arrêt HTTP gracieux, délai Spring 30 s et Compose 45 s ; reprise outbox testée |
 | T081 | Créer l’environnement commun des tests d’intégration | Pile Compose de recette ; adaptation au lieu de Testcontainers |
-| T082 | Uniformiser les tests unitaires et qualité de code | Tests Java exécutés |
+| T082 | Uniformiser les tests unitaires et qualité de code | 26 tests Java exécutés, formatage cohérent ; rapport JaCoCo et règles de style automatisées à compléter |
 | T083 | Finaliser la collection Postman complète | OpenAPI validé ; recette HTTP exécutée |
 | T084 | Automatiser les attentes et l’exécution Postman | Collection Newman exécutée |
 | T085 | Créer les tests de contrat des messages Kafka | Voir matrice réelle docs/resultats-recette.md |
 | T086 | Créer les tests de disponibilité dégradée | Voir matrice réelle docs/resultats-recette.md |
-| T087 | Tester la durabilité sous interruption du traitement | Voir matrice réelle docs/resultats-recette.md |
-| T088 | Tester la pagination et les limites de volume | Redémarrage Mongo vérifié ; recréation exhaustive des volumes à compléter |
+| T087 | Tester la durabilité sous interruption du traitement | Redémarrage Java avec outbox en attente couvert ; interruptions à chaque écriture et panne DLQ à compléter |
+| T088 | Tester la pagination et les limites de volume | Multijour, dates égales, curseurs et budget réel 10001 mesures vérifiés |
 | T089 | Créer le parcours de recette fonctionnelle unique | Recette scripts et limites documentées |
 | T090 | Créer la CI du backend sans déploiement VM | CI fournie, consulter Actions pour preuve distante |
 | T091 | Rédiger le guide de démarrage depuis un clone neuf | Démarrage documenté ; second poste humain non testé |

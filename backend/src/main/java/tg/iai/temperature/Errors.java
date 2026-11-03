@@ -15,6 +15,7 @@ class Errors {
 
   @ExceptionHandler({
     IllegalArgumentException.class,
+    ClassCastException.class,
     HttpMessageNotReadableException.class,
     MethodArgumentTypeMismatchException.class,
     org.springframework.web.bind.MissingServletRequestParameterException.class

@@ -49,6 +49,8 @@ jobs:
         run: python3 scripts/recette.py --report /tmp/temperature-reports/http.json
       - name: Pannes et reprise
         run: python3 scripts/recette-pannes.py --test-stack temperature --report /tmp/temperature-reports/pannes.json
+      - name: Budget des statistiques
+        run: python3 scripts/recette-volume.py --test-stack temperature
       - name: Recette Postman
         run: ./scripts/run-postman.sh
       - name: Préparer le navigateur

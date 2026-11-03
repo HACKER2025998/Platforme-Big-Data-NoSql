@@ -1,6 +1,7 @@
 name: temperature-app
 services:
   backend:
+    stop_grace_period: 45s
     image: ${BACKEND_IMAGE:?Image backend requise}
     restart: unless-stopped
     environment:
