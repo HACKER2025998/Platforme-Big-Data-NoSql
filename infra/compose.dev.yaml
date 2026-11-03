@@ -21,24 +21,39 @@ services:
     image: cassandra:5.0.9
     restart: unless-stopped
     environment:
+      CASSANDRA_APP_PASSWORD: ${CASSANDRA_APP_PASSWORD:?Secret Cassandra requis}
+      CASSANDRA_ADMIN_PASSWORD: ${CASSANDRA_ADMIN_PASSWORD:?Secret admin Cassandra requis}
       CASSANDRA_CLUSTER_NAME: temperature
       CASSANDRA_DC: datacenter1
       CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
       MAX_HEAP_SIZE: 1G
       HEAP_NEWSIZE: 256M
+    command:
+      - bash
+      - -ec
+      - |
+        sed -i 's/^authenticator:.*/authenticator: PasswordAuthenticator/; s/^authorizer:.*/authorizer: CassandraAuthorizer/' /etc/cassandra/cassandra.yaml
+        exec /usr/local/bin/docker-entrypoint.sh cassandra -f
     ports: ["127.0.0.1:9042:9042"]
     volumes: ["cassandra_data:/var/lib/cassandra"]
     healthcheck:
-      test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES' >/dev/null"]
+      test:
+        - CMD-SHELL
+        - cqlsh -u temperature_app -p "$$CASSANDRA_APP_PASSWORD" -e 'SELECT cluster_name FROM system.local' >/dev/null
       interval: 15s
       timeout: 10s
       retries: 40
   cassandra-init:
     image: cassandra:5.0.9
     depends_on:
-      cassandra: {condition: service_healthy}
-    volumes: ["./cassandra/001-schema.cql:/schema.cql:ro"]
-    entrypoint: ["cqlsh", "cassandra", "-f", "/schema.cql"]
+      cassandra: {condition: service_started}
+    environment:
+      CASSANDRA_APP_PASSWORD: ${CASSANDRA_APP_PASSWORD}
+      CASSANDRA_ADMIN_PASSWORD: ${CASSANDRA_ADMIN_PASSWORD}
+    volumes:
+      - ./cassandra/001-schema.cql:/schema.cql:ro
+      - ./cassandra/init-schema.sh:/init-schema.sh:ro
+    entrypoint: ["bash", "/init-schema.sh"]
   redis:
     image: redis:7.4.12-alpine
     restart: unless-stopped
@@ -92,6 +107,8 @@ services:
     environment:
       MONGODB_URI: mongodb://${MONGO_APP_USERNAME:-temperature_app}:${MONGO_APP_PASSWORD}@mongodb:27017/temperature?authSource=temperature&w=majority&journal=true&serverSelectionTimeoutMS=3000
       CASSANDRA_HOST: cassandra
+      CASSANDRA_USERNAME: temperature_app
+      CASSANDRA_APP_PASSWORD: ${CASSANDRA_APP_PASSWORD}
       REDIS_HOST: redis
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
