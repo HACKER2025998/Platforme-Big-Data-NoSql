@@ -15,7 +15,6 @@ cqlsh cassandra -u cassandra -p "$admin" -f /schema.cql
 # Ne pas imprimer les commandes contenant les mots de passe.
 {
   printf "CREATE ROLE IF NOT EXISTS temperature_app WITH PASSWORD = '%s' AND LOGIN = true;\n" "$CASSANDRA_APP_PASSWORD"
-  printf "ALTER ROLE temperature_app WITH PASSWORD = '%s';\n" "$CASSANDRA_APP_PASSWORD"
   printf 'GRANT SELECT ON KEYSPACE temperature TO temperature_app;\nGRANT MODIFY ON KEYSPACE temperature TO temperature_app;\n'
   printf "ALTER ROLE cassandra WITH PASSWORD = '%s';\n" "$CASSANDRA_ADMIN_PASSWORD"
 } | cqlsh cassandra -u cassandra -p "$admin"
