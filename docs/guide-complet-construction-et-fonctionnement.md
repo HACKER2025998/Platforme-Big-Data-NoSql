@@ -985,11 +985,17 @@ En cas d’échec, le reçu garde son événement ; `tentatives` augmente et `ne
 
 `fixedDelay=2000` ne promet donc pas un passage exactement toutes les deux secondes si l’envoi est lent. Le délai commence après la fin du travail précédent.
 
+Le producteur utilise `acks=all`. Kafka attend les confirmations des répliques synchronisées concernées ; avec notre facteur de réplication 1, cela reste une seule copie de la partition. Cette confirmation ne signifie pas que Cassandra et MongoDB ont déjà reçu leurs projections.
+
 ### 10.8 Le consommateur : confirmer après les écritures
 
 La configuration désactive `enable.auto.commit` et utilise `ack-mode=record`. Le framework confirme la progression après le retour réussi du traitement de l’enregistrement.
 
 Le consommateur vérifie le message par rapport au reçu immuable MongoDB, effectue les écritures durables et marque PROCESSED. S’il lève une exception, le chemin de reprise entre en jeu.
+
+La configuration `auto-offset-reset=earliest` s’applique lorsque le groupe ne possède pas de position de lecture exploitable : il part alors du début encore disponible du journal. Elle ne force pas à relire tout le topic à chaque redémarrage lorsqu’un offset valide a déjà été confirmé.
+
+Les sérialiseurs String transforment clé et JSON texte en octets ; les désérialiseurs les reconstruisent à la lecture. Le client Kafka prend en charge le protocole réseau.
 
 Confirmer un offset n’efface pas l’événement du journal Kafka. La suppression des segments dépend notamment de la rétention ; d’autres groupes peuvent avoir leur propre progression.
 
@@ -2062,7 +2068,7 @@ community.docker.docker_compose_v2:
 - `project_src` est le dossier du projet **sur la VM data**.
 - Le module utilise le Compose et son `.env` dans ce dossier.
 - `wait: true` attend l’état attendu des services, selon leur configuration de santé.
-- `wait_timeout: 600` fixe une limite d’attente de dix minutes pour cette opération.
+- `wait_timeout: 600` fixe une limite de dix minutes à l’attente des états des services ; les téléchargements d’images et autres préparations ont aussi leur propre durée.
 
 ### 17.10 Troisième play : application
 
