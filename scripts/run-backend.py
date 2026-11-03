@@ -11,4 +11,5 @@ for line in (root/'.env').read_text().splitlines():
 user=quote(env.get('MONGO_APP_USERNAME','temperature_app'),safe='')
 password=quote(env['MONGO_APP_PASSWORD'],safe='')
 env.setdefault('MONGODB_URI',f'mongodb://{user}:{password}@localhost:27017/temperature?authSource=temperature&w=majority&journal=true&serverSelectionTimeoutMS=3000')
-raise SystemExit(subprocess.call(['/usr/lib/jvm/java-21-openjdk/bin/java','-jar',str(root/'backend/target/app.jar')],env=env))
+java=str(Path(env['JAVA_HOME'])/'bin/java') if env.get('JAVA_HOME') else 'java'
+raise SystemExit(subprocess.call([java,'-jar',str(root/'backend/target/app.jar')],env=env))

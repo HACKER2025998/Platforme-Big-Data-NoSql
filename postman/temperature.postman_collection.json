@@ -1,0 +1,356 @@
+{
+  "info": {
+    "name": "Températures — recette",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if(pm.info.iteration===0 && pm.info.requestName===\"01 Créer capteur\"){const now=new Date();pm.environment.set(\"sensorId\",\"POSTMAN-\"+Date.now());pm.environment.set(\"eventId\",pm.variables.replaceIn(\"{{$guid}}\"));pm.environment.set(\"measurementDate\",now.toISOString());pm.environment.set(\"du\",new Date(now.getTime()-3600000).toISOString());pm.environment.set(\"au\",new Date(now.getTime()+60000).toISOString());pm.environment.set(\"poll\",0);}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Créer capteur",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/capteurs",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"id\": \"{{sensorId}}\", \"libelle\": \"Recette Postman\", \"salle\": \"Salle Postman\", \"seuilTemperature\": 40, \"actif\": true}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\",()=>pm.response.to.have.status(201));",
+              "pm.environment.set(\"version\",pm.response.json().version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Lire capteur",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/capteurs/{{sensorId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Lister capteurs",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/capteurs?taille=100"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Modifier capteur",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/capteurs/{{sensorId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"version\": 0, \"libelle\": \"Capteur modifi\\u00e9\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Soumettre mesure élevée",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/mesures",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"eventId\": \"{{eventId}}\", \"capteurId\": \"{{sensorId}}\", \"date\": \"{{measurementDate}}\", \"temperature\": 45.2}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 202\",()=>pm.response.to.have.status(202));",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Attendre traitement",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/ingestions/{{eventId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const n=Number(pm.environment.get(\"poll\")||0); if(pm.response.json().processingState!==\"PROCESSED\"){pm.test(\"Attente bornée\",()=>pm.expect(n).below(45));if(n<45){pm.environment.set(\"poll\",n+1);pm.execution.setNextRequest(\"06 Attendre traitement\");}}else{pm.test(\"Traité\",()=>pm.expect(pm.response.json().processingState).eql(\"PROCESSED\"));}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Dernière mesure",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/capteurs/{{sensorId}}/derniere-mesure"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Valeur\",()=>pm.expect(pm.response.json().temperature).eql(45.2));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Historique",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/capteurs/{{sensorId}}/mesures?du={{du}}&au={{au}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Statistiques",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/capteurs/{{sensorId}}/statistiques?du={{du}}&au={{au}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Count\",()=>pm.expect(pm.response.json().count).eql(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Alertes",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/alertes?capteurId={{sensorId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Une alerte\",()=>pm.expect(pm.response.json().items.length).eql(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Acquitter",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/alertes/{{eventId}}/acquittement"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Acquittée\",()=>pm.expect(pm.response.json().statut).eql(\"ACKNOWLEDGED\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Probe liveness",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/actuator/health/liveness"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Probe readiness",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/actuator/health/readiness"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              ""
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

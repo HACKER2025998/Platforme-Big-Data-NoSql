@@ -6,6 +6,14 @@ def call(path,body=None):
     r=urllib.request.Request(a.url+'/api/v1'+path,data=json.dumps(body).encode() if body else None,headers={'Content-Type':'application/json'})
     with urllib.request.urlopen(r,timeout=15) as f:return json.load(f)
 if a.count<1 or a.count>100 or a.interval<=0:p.error('count : 1 à 100 ; interval > 0')
+# Le conteneur générateur peut être lancé en même temps que Java.
+for attempt in range(120):
+    try:
+        with urllib.request.urlopen(a.url+'/actuator/health/readiness',timeout=10) as response:
+            if response.status==200: break
+    except (urllib.error.URLError,TimeoutError): pass
+    time.sleep(2)
+else: raise SystemExit('Backend indisponible après attente bornée')
 if a.seed:
     for i in range(1,a.count+1):
         body={'id':f'SALLE-{i:02}','libelle':f'Capteur {i:02}','salle':f'Salle {i:02}','seuilTemperature':40,'actif':True}
