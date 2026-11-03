@@ -13,6 +13,11 @@ const page = await browser.newPage({
   viewport: { width: 1440, height: 1100 },
   deviceScaleFactor: 1,
 });
+const apiHealth = await page.request.get(
+  (process.env.UI_URL || "http://localhost:8088") + "/api/v1/capteurs",
+);
+if (!apiHealth.ok())
+  throw new Error("API via Nginx indisponible : " + apiHealth.status());
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 await page.goto(process.env.UI_URL || "http://localhost:8088");

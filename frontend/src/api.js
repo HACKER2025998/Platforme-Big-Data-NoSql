@@ -4,7 +4,12 @@ export async function request(path, options = {}) {
     headers: { "Content-Type": "application/json", ...options.headers },
   });
   if (response.status === 204) return null;
-  const body = await response.json();
+  let body;
+  try {
+    body = await response.json();
+  } catch {
+    throw new Error("Le service est momentanément indisponible.");
+  }
   if (!response.ok)
     throw new Error(
       body.detail || "Le service est momentanément indisponible.",
