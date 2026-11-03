@@ -27,6 +27,7 @@ services:
       CASSANDRA_ADMIN_PASSWORD: ${CASSANDRA_ADMIN_PASSWORD:?Secret admin Cassandra requis}
       CASSANDRA_CLUSTER_NAME: temperature
       CASSANDRA_DC: datacenter1
+      CASSANDRA_BROADCAST_RPC_ADDRESS: ${DATA_BIND_IP:?Adresse privée CQL requise}
       CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
       MAX_HEAP_SIZE: 1G
       HEAP_NEWSIZE: 256M

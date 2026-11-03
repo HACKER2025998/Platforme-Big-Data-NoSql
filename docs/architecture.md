@@ -61,7 +61,7 @@ Pas de transaction distribuée et pas d’exactly-once global. Une panne peut la
 
 Les VM Ubuntu et leurs accès SSH sont créés manuellement. Ansible prépare Docker, copie les configurations dans `/opt/plateforme`, démarre Compose et attend les probes. Deux fichiers Compose distincts sont nécessaires : Compose ne crée pas de réseau Docker multi-hôte ni les VM.
 
-Le navigateur joint la VM app sur HTTP 80. Java joint les ports privés Mongo 27017, CQL 9042, Redis 6379 et Kafka 9092 de la VM data. Le contrôleur utilise SSH 22. Le listener Kafka annoncé doit être l’adresse privée accessible de la VM data. Les pare-feu du laboratoire doivent limiter ces flux au réseau prévu : les ports publiés Docker demandent des règles réseau adaptées, et ne sont pas automatiquement protégés par une simple politique UFW.
+Le navigateur joint la VM app sur HTTP 80. Java joint les ports privés Mongo 27017, CQL 9042, Redis 6379 et Kafka 9092 de la VM data. Le contrôleur utilise SSH 22. Le listener Kafka et l’adresse RPC annoncée par Cassandra doivent être l’adresse privée accessible de la VM data. Le Compose data définit explicitement `CASSANDRA_BROADCAST_RPC_ADDRESS` pour éviter d’annoncer une adresse du bridge Docker à Java sur l’autre VM. Les pare-feu du laboratoire doivent limiter ces flux au réseau prévu : les ports publiés Docker demandent des règles réseau adaptées, et ne sont pas automatiquement protégés par une simple politique UFW.
 
 ## Objectif d’automatisation
 
