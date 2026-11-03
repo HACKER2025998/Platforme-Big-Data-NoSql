@@ -1,0 +1,138 @@
+name: temperature
+services:
+  mongodb:
+    image: mongo:8.0.32@sha256:d0d926f94df099bff534b7ee5b5986458131a22489dfff8664509af0c1e2ca9c
+    restart: unless-stopped
+    environment:
+      # Réserver rseq à glibc évite le chemin TCMalloc per-CPU incompatible avec certains noyaux récents.
+      GLIBC_TUNABLES: glibc.pthread.rseq=1
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Secret Mongo requis}
+      MONGO_APP_USERNAME: ${MONGO_APP_USERNAME:-temperature_app}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?Secret applicatif Mongo requis}
+    ports: ["127.0.0.1:27017:27017"]
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo/init.js:/docker-entrypoint-initdb.d/001-init.js:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'quit(db.runCommand({ping:1}).ok ? 0 : 1)' --username $$MONGO_INITDB_ROOT_USERNAME --password $$MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  cassandra:
+    image: cassandra:5.0.9@sha256:ae4cc2e4b62a5b2a2dd1645ba827cb50c589cc7531bcffe8b8b60ac3b1adc79d
+    restart: unless-stopped
+    environment:
+      CASSANDRA_APP_PASSWORD: ${CASSANDRA_APP_PASSWORD:?Secret Cassandra requis}
+      CASSANDRA_ADMIN_PASSWORD: ${CASSANDRA_ADMIN_PASSWORD:?Secret admin Cassandra requis}
+      CASSANDRA_CLUSTER_NAME: temperature
+      CASSANDRA_DC: datacenter1
+      CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+      MAX_HEAP_SIZE: 1G
+      HEAP_NEWSIZE: 256M
+    command:
+      - bash
+      - -ec
+      - |
+        sed -i 's/^authenticator:.*/authenticator: PasswordAuthenticator/; s/^authorizer:.*/authorizer: CassandraAuthorizer/' /etc/cassandra/cassandra.yaml
+        exec /usr/local/bin/docker-entrypoint.sh cassandra -f
+    ports: ["127.0.0.1:9042:9042"]
+    volumes: ["cassandra_data:/var/lib/cassandra"]
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - cqlsh -u temperature_app -p "$$CASSANDRA_APP_PASSWORD" -e 'SELECT cluster_name FROM system.local' >/dev/null
+      interval: 15s
+      timeout: 10s
+      retries: 40
+  cassandra-init:
+    image: cassandra:5.0.9@sha256:ae4cc2e4b62a5b2a2dd1645ba827cb50c589cc7531bcffe8b8b60ac3b1adc79d
+    depends_on:
+      cassandra: {condition: service_started}
+    environment:
+      CASSANDRA_APP_PASSWORD: ${CASSANDRA_APP_PASSWORD}
+      CASSANDRA_ADMIN_PASSWORD: ${CASSANDRA_ADMIN_PASSWORD}
+    volumes:
+      - ./cassandra/001-schema.cql:/schema.cql:ro
+      - ./cassandra/init-schema.sh:/init-schema.sh:ro
+    entrypoint: ["bash", "/init-schema.sh"]
+  redis:
+    image: redis:7.4.12-alpine@sha256:8da19c7399dca900c6822a1cf30f9d2285585e2c4b457ff4095b0f4500054d3f
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Secret Redis requis}
+    command: ["sh", "-c", 'exec redis-server --requirepass "$$REDIS_PASSWORD" --maxmemory 128mb --maxmemory-policy allkeys-lru']
+    ports: ["127.0.0.1:6379:6379"]
+    healthcheck:
+      test: ["CMD-SHELL", 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+  kafka:
+    image: apache/kafka:4.0.2@sha256:836cafdad9f4825880d7cf1d5a21202915ae2527bd0ef1c3600c526ed7814d1f
+    restart: unless-stopped
+    ports: ["127.0.0.1:9092:9092"]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_LOG_RETENTION_HOURS: 24
+    volumes: ["kafka_data:/var/lib/kafka/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:29092 --list >/dev/null"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+  kafka-init:
+    image: apache/kafka:4.0.2@sha256:836cafdad9f4825880d7cf1d5a21202915ae2527bd0ef1c3600c526ed7814d1f
+    depends_on:
+      kafka: {condition: service_healthy}
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        for topic in mesures-temperature mesures-temperature-dlq; do
+          /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --create --if-not-exists --topic $$topic --partitions 3 --replication-factor 1
+        done
+  backend:
+    stop_grace_period: 45s
+    build: ../backend
+    restart: unless-stopped
+    environment:
+      MONGODB_URI: mongodb://${MONGO_APP_USERNAME:-temperature_app}:${MONGO_APP_PASSWORD}@mongodb:27017/temperature?authSource=temperature&w=majority&journal=true&serverSelectionTimeoutMS=3000
+      CASSANDRA_HOST: cassandra
+      CASSANDRA_USERNAME: temperature_app
+      CASSANDRA_APP_PASSWORD: ${CASSANDRA_APP_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      CURSOR_SECRET: ${CURSOR_SECRET:?Secret curseur requis}
+    depends_on:
+      mongodb: {condition: service_healthy}
+      cassandra-init: {condition: service_completed_successfully}
+      kafka-init: {condition: service_completed_successfully}
+    ports: ["127.0.0.1:8080:8080"]
+  web:
+    build: ../frontend
+    restart: unless-stopped
+    depends_on: [backend]
+    ports: ["127.0.0.1:8088:80"]
+  generator:
+    image: python:3.13-slim@sha256:70729b46c69b4f1e97c4822c1af3df53a1476cf5ddc6c087c0c10bc3a5678c2f
+    profiles: ["demo"]
+    depends_on: [backend]
+    volumes: ["../scripts/generate-measures.py:/generate.py:ro"]
+    command: ["python", "/generate.py", "--url", "http://backend:8080", "--seed"]
+volumes:
+  mongo_data:
+  cassandra_data:
+  kafka_data:

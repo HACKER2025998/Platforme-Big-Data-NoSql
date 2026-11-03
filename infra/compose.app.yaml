@@ -1,0 +1,21 @@
+name: temperature-app
+services:
+  backend:
+    stop_grace_period: 45s
+    image: ${BACKEND_IMAGE:?Image backend requise}
+    restart: unless-stopped
+    environment:
+      MONGODB_URI: mongodb://${MONGO_APP_USERNAME:-temperature_app}:${MONGO_APP_PASSWORD}@${DATA_HOST}:27017/temperature?authSource=temperature&w=majority&journal=true&serverSelectionTimeoutMS=3000
+      CASSANDRA_HOST: ${DATA_HOST}
+      CASSANDRA_USERNAME: temperature_app
+      CASSANDRA_APP_PASSWORD: ${CASSANDRA_APP_PASSWORD}
+      REDIS_HOST: ${DATA_HOST}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: ${DATA_HOST}:9092
+      CURSOR_SECRET: ${CURSOR_SECRET}
+    ports: ["127.0.0.1:8080:8080"]
+  web:
+    image: ${WEB_IMAGE:?Image web requise}
+    restart: unless-stopped
+    depends_on: [backend]
+    ports: ["${APP_BIND_IP:?Adresse privée VM application requise}:80:80"]
