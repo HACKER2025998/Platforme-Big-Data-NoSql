@@ -1,0 +1,18 @@
+# Configuration privée
+.env
+.env.*
+!.env.example
+
+# IntelliJ
+.idea/
+*.iml
+
+# Compilation Java
+**/target/
+
+# Journaux
+*.log
+node_modules/
+frontend/dist/
+.playwright/
+*.log
