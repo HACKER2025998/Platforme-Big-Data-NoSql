@@ -80,8 +80,8 @@
         that:
           - backend_image is defined
           - web_image is defined
-          - "'@sha256:' in backend_image or (backend_image | regex_search(':[0-9a-f]{40}$'))"
-          - "'@sha256:' in web_image or (web_image | regex_search(':[0-9a-f]{40}$'))"
+          - "('@sha256:' in backend_image) or (backend_image is regex(':[0-9a-f]{40}$'))"
+          - "('@sha256:' in web_image) or (web_image is regex(':[0-9a-f]{40}$'))"
     - name: Copier le Compose applicatif
       ansible.builtin.copy:
         src: ../infra/compose.app.yaml
