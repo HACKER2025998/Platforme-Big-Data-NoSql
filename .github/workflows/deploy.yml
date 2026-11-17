@@ -1,0 +1,40 @@
+name: Déploiement laboratoire
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: SHA de 40 caractères des images validées
+        required: true
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, temperature-lab]
+    environment: laboratoire
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit }}
+      - name: Vérifier les entrées et les secrets du runner
+        env:
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          [[ "$COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          test -f /opt/temperature-secrets/.env
+          test -f /opt/temperature-secrets/inventory.ini
+      - name: Préparer les fichiers privés
+        run: |
+          cp /opt/temperature-secrets/.env .env
+          cp /opt/temperature-secrets/inventory.ini ansible/inventory.ini
+          chmod 600 .env ansible/inventory.ini
+      - name: Déployer les images validées
+        env:
+          COMMIT: ${{ inputs.commit }}
+        working-directory: ansible
+        run: |
+          ansible-galaxy collection install -r requirements.yml
+          repo="${GITHUB_REPOSITORY,,}"
+          ansible-playbook deploy.yml -e "backend_image=ghcr.io/$repo-backend:$COMMIT" -e "web_image=ghcr.io/$repo-frontend:$COMMIT"
+      - name: Retirer les copies de secrets
+        if: always()
+        run: rm -f .env ansible/inventory.ini

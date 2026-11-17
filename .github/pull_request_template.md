@@ -16,4 +16,4 @@ Closes #<numéro de l'issue> — [Txxx] Titre de la tâche
 - [ ] Contrat (OpenAPI / docs) à jour si impacté
 - [ ] Aucun secret commité (.env, mots de passe, tokens)
 - [ ] Branche nommée `feat/Txxx-description`
-- [ ] PR relue par un autre membre avant fusion sur `main`
+- [ ] PR relue par un autre membre avant fusion sur `develop`
