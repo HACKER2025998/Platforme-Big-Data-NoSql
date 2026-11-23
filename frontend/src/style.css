@@ -68,6 +68,8 @@
   font-synthesis: none;
   font-size: 13px;
   font-weight: 400;
+  /* Agrandissement global de l'interface pour une meilleure lisibilité. */
+  zoom: 1.3;
 }
 * {
   box-sizing: border-box;
